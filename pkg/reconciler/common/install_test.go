@@ -56,8 +56,8 @@ func TestInstall(t *testing.T) {
 		*clusterRole.DeepCopy(),
 		*roleBinding.DeepCopy(),
 		*clusterRoleBinding.DeepCopy(),
-		*deployment.DeepCopy(),
 		*mutatingWebhookConfiguration.DeepCopy(),
+		*deployment.DeepCopy(),
 		*validatingWebhookConfiguration.DeepCopy(),
 	}
 

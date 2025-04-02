@@ -28,10 +28,12 @@ import (
 )
 
 var (
-	role            mf.Predicate = mf.Any(mf.ByKind("ClusterRole"), mf.ByKind("Role"))
-	rolebinding     mf.Predicate = mf.Any(mf.ByKind("ClusterRoleBinding"), mf.ByKind("RoleBinding"))
-	webhook         mf.Predicate = mf.Any(mf.ByKind("MutatingWebhookConfiguration"), mf.ByKind("ValidatingWebhookConfiguration"))
-	gatewayNotMatch              = "no matches for kind \"Gateway\""
+	role              mf.Predicate = mf.Any(mf.ByKind("ClusterRole"), mf.ByKind("Role"))
+	rolebinding       mf.Predicate = mf.Any(mf.ByKind("ClusterRoleBinding"), mf.ByKind("RoleBinding"))
+	mutatingWebhook   mf.Predicate = mf.ByKind("MutatingWebhookConfiguration")
+	validatingWebhook mf.Predicate = mf.ByKind("ValidatingWebhookConfiguration")
+	webhook           mf.Predicate = mf.Any(mutatingWebhook, validatingWebhook)
+	gatewayNotMatch                = "no matches for kind \"Gateway\""
 )
 
 // Install applies the manifest resources for the given version and updates the given
@@ -52,6 +54,14 @@ func Install(ctx context.Context, manifest *mf.Manifest, instance base.KComponen
 		status.MarkInstallFailed(err.Error())
 		return fmt.Errorf("failed to apply (cluster)rolebindings: %w", err)
 	}
+
+	if err := manifest.Filter(mutatingWebhook).Apply(); err != nil {
+		logger.Errorw("Failed to apply mutating webhooks", "error", err)
+		status.MarkInstallFailed(err.Error())
+		return fmt.Errorf("failed to apply mutating webhooks: %w", err)
+	}
+	logger.Infow("Applied mutating webhooks")
+
 	logger.Infow("Applied rbac manifest------------------------------------------------")
 	if err := manifest.Filter(mf.Not(mf.Any(role, rolebinding, webhook))).Apply(); err != nil {
 		logger.Errorw("Failed to apply non rbac manifest", "error", err)
@@ -66,12 +76,14 @@ func Install(ctx context.Context, manifest *mf.Manifest, instance base.KComponen
 		return fmt.Errorf("failed to apply non rbac manifest: %w", err)
 	}
 	logger.Infow("Applied non rbac manifest")
-	if err := manifest.Filter(webhook).Apply(); err != nil {
-		logger.Errorw("Failed to apply webhooks", "error", err)
+
+	if err := manifest.Filter(validatingWebhook).Apply(); err != nil {
+		logger.Errorw("Failed to apply validating webhooks", "error", err)
 		status.MarkInstallFailed(err.Error())
-		return fmt.Errorf("failed to apply webhooks: %w", err)
+		return fmt.Errorf("failed to apply validating webhooks: %w", err)
 	}
-	logger.Infow("Applied webhooks")
+	logger.Infow("Applied validating webhooks")
+
 	status.MarkInstallSucceeded()
 	logger.Infow("Install succeeded")
 	status.SetVersion(TargetVersion(instance))
