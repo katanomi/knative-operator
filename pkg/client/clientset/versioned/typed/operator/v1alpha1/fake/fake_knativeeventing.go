@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Knative Authors
+Copyright 2023 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeKnativeEventings struct {
 	ns   string
 }
 
-var knativeeventingsResource = schema.GroupVersionResource{Group: "operator.knative.dev", Version: "v1alpha1", Resource: "knativeeventings"}
+var knativeeventingsResource = v1alpha1.SchemeGroupVersion.WithResource("knativeeventings")
 
-var knativeeventingsKind = schema.GroupVersionKind{Group: "operator.knative.dev", Version: "v1alpha1", Kind: "KnativeEventing"}
+var knativeeventingsKind = v1alpha1.SchemeGroupVersion.WithKind("KnativeEventing")
 
 // Get takes name of the knativeEventing, and returns the corresponding knativeEventing object, and an error if there is any.
 func (c *FakeKnativeEventings) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.KnativeEventing, err error) {
