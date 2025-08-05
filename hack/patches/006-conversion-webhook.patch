@@ -1,58 +1,35 @@
-Subject: [PATCH] fix: add environment parameter to control the use of OLM TLS.
----
-Index: vendor/knative.dev/pkg/webhook/webhook.go
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
 diff --git a/vendor/knative.dev/pkg/webhook/webhook.go b/vendor/knative.dev/pkg/webhook/webhook.go
---- a/vendor/knative.dev/pkg/webhook/webhook.go	(revision 135ea9775cbae2a3b5e02e2cd11697ea41576efe)
-+++ b/vendor/knative.dev/pkg/webhook/webhook.go	(date 1726155195856)
-@@ -24,6 +24,7 @@
- 	"html"
+index eff693e80..05b5f44ca 100644
+--- a/vendor/knative.dev/pkg/webhook/webhook.go
++++ b/vendor/knative.dev/pkg/webhook/webhook.go
+@@ -25,6 +25,7 @@ import (
+ 	"log"
+ 	"net"
  	"net/http"
- 	"time"
 +	"os"
+ 	"time"
  
  	// Injection stuff
- 
-@@ -145,27 +146,43 @@
- 		// informer, then we can fetch the shared informer factory here and produce
+@@ -174,27 +175,45 @@ func New(
  		// a new secret informer from it.
  		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
--
+ 
 -		webhook.tlsConfig = &tls.Config{
 -			MinVersion: opts.TLSMinVersion,
--
--			// If we return (nil, error) the client sees - 'tls: internal error"
--			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
--			//
--			// We'll return (nil, nil) when we don't find a certificate
--			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
--				secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
--				if err != nil {
--					logger.Errorw("failed to fetch secret", zap.Error(err))
--					return nil, nil
--				}
--
--				serverKey, ok := secret.Data[certresources.ServerKey]
--				if !ok {
--					logger.Warn("server key missing")
--					return nil, nil
--				}
--				serverCert, ok := secret.Data[certresources.ServerCert]
 +		var getCertificate = func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 +			secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
 +			if err != nil {
 +				logger.Errorw("failed to fetch secret", zap.Error(err))
 +				return nil, nil
 +			}
-+			serverKey, ok := secret.Data[certresources.ServerKey]
++			webOpts := GetOptions(ctx)
++			sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
++			serverKey, ok := secret.Data[sKey]
 +			if !ok {
 +				logger.Warn("server key missing")
 +				return nil, nil
 +			}
-+			serverCert, ok := secret.Data[certresources.ServerCert]
++			serverCert, ok := secret.Data[sCert]
 +			if !ok {
 +				logger.Warn("server cert missing")
 +				return nil, nil
@@ -63,25 +40,34 @@ diff --git a/vendor/knative.dev/pkg/webhook/webhook.go b/vendor/knative.dev/pkg/
 +			}
 +			return &cert, nil
 +		}
-+
+ 
+-			// If we return (nil, error) the client sees - 'tls: internal error"
+-			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
+-			//
+-			// We'll return (nil, nil) when we don't find a certificate
+-			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 +		if os.Getenv("USE_OLM_TLS") != "" {
 +			getCertificate = func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-+				secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
-+				if err != nil {
-+					logger.Errorw("failed to fetch secret", zap.Error(err))
-+					return nil, nil
-+				}
+ 				secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
+ 				if err != nil {
+ 					logger.Errorw("failed to fetch secret", zap.Error(err))
+ 					return nil, nil
+ 				}
+-				webOpts := GetOptions(ctx)
+-				sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
+-				serverKey, ok := secret.Data[sKey]
 +
 +				serverKey, ok := secret.Data["tls.key"]
-+				if !ok {
-+					logger.Warn("server key missing")
-+					return nil, nil
-+				}
+ 				if !ok {
+ 					logger.Warn("server key missing")
+ 					return nil, nil
+ 				}
+-				serverCert, ok := secret.Data[sCert]
 +				serverCert, ok := secret.Data["tls.crt"]
  				if !ok {
  					logger.Warn("server cert missing")
  					return nil, nil
-@@ -175,7 +192,17 @@
+@@ -204,7 +223,17 @@ func New(
  					return nil, err
  				}
  				return &cert, nil

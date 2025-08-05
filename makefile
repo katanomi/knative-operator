@@ -1,2 +1,2 @@
 update-deps:
-	git apply hack/patches/*
+	git apply hack/patches/*.patch
