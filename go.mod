@@ -1,8 +1,6 @@
 module knative.dev/operator
 
-go 1.24.0
-
-toolchain go1.24.10
+go 1.25
 
 require (
 	github.com/go-logr/zapr v1.2.2
