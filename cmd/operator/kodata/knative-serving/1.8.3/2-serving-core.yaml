@@ -1081,7 +1081,7 @@ spec:
                           description: This is accessible behind a feature flag - kubernetes.podspec-dnspolicy
                           type: string
                         enableServiceLinks:
-                          description: 'EnableServiceLinks indicates whether information about services should be injected into pod''s environment variables, matching the syntax of Docker links. Optional: Knative defaults this to false.'
+                          description: 'EnableServiceLinks indicates whether information about services should be injected into pod''s environment variables, matching the syntax of container links. Optional: Knative defaults this to false.'
                           type: boolean
                         hostAliases:
                           description: This is accessible behind a feature flag - kubernetes.podspec-hostaliases
@@ -2761,7 +2761,7 @@ spec:
                   description: This is accessible behind a feature flag - kubernetes.podspec-dnspolicy
                   type: string
                 enableServiceLinks:
-                  description: 'EnableServiceLinks indicates whether information about services should be injected into pod''s environment variables, matching the syntax of Docker links. Optional: Knative defaults this to false.'
+                  description: 'EnableServiceLinks indicates whether information about services should be injected into pod''s environment variables, matching the syntax of container links. Optional: Knative defaults this to false.'
                   type: boolean
                 hostAliases:
                   description: This is accessible behind a feature flag - kubernetes.podspec-hostaliases
@@ -3959,7 +3959,7 @@ spec:
                           description: This is accessible behind a feature flag - kubernetes.podspec-dnspolicy
                           type: string
                         enableServiceLinks:
-                          description: 'EnableServiceLinks indicates whether information about services should be injected into pod''s environment variables, matching the syntax of Docker links. Optional: Knative defaults this to false.'
+                          description: 'EnableServiceLinks indicates whether information about services should be injected into pod''s environment variables, matching the syntax of container links. Optional: Knative defaults this to false.'
                           type: boolean
                         hostAliases:
                           description: This is accessible behind a feature flag - kubernetes.podspec-hostaliases

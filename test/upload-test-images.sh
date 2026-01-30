@@ -33,10 +33,10 @@ function upload_test_images() {
   if [ ! -n "$image_dir" ] ; then
     image_dir="test/test_images"
   fi
-  local docker_tag=$3
+  local image_tag=$3
   local tag_option=""
-  if [ -n "${docker_tag}" ]; then
-    tag_option="--tags $docker_tag,latest"
+  if [ -n "${image_tag}" ]; then
+    tag_option="--tags $image_tag,latest"
   fi
 
   # If PLATFORM environment variable is specified, then images will be built for

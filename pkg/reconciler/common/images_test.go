@@ -95,7 +95,7 @@ func TestResourceTransform(t *testing.T) {
 		name: "NoChangeOverrideWithDifferentName",
 		containers: []corev1.Container{{
 			Name:  "image",
-			Image: "docker.io/name/image:tag2",
+			Image: "quay.io/name/image:tag2",
 		}},
 		registry: base.Registry{
 			Override: map[string]string{
@@ -104,7 +104,7 @@ func TestResourceTransform(t *testing.T) {
 		},
 		expected: []corev1.Container{{
 			Name:  "image",
-			Image: "docker.io/name/image:tag2",
+			Image: "quay.io/name/image:tag2",
 		}},
 	}, {
 		name: "NoChange",
@@ -124,11 +124,11 @@ func TestResourceTransform(t *testing.T) {
 		}},
 		registry: base.Registry{
 			Override: map[string]string{
-				"SOME_IMAGE": "docker.io/my/overridden-image",
+				"SOME_IMAGE": "quay.io/my/overridden-image",
 			},
 		},
 		expected: []corev1.Container{{
-			Env: []corev1.EnvVar{{Name: "SOME_IMAGE", Value: "docker.io/my/overridden-image"}},
+			Env: []corev1.EnvVar{{Name: "SOME_IMAGE", Value: "quay.io/my/overridden-image"}},
 		}},
 	}, {
 		name: "NoOverrideEnvVarImage",
@@ -137,7 +137,7 @@ func TestResourceTransform(t *testing.T) {
 		}},
 		registry: base.Registry{
 			Override: map[string]string{
-				"OTHER_IMAGE": "docker.io/my/overridden-image",
+				"OTHER_IMAGE": "quay.io/my/overridden-image",
 			},
 		},
 		expected: []corev1.Container{{
@@ -153,13 +153,13 @@ func TestResourceTransform(t *testing.T) {
 		registry: base.Registry{
 			Override: map[string]string{
 				"queue":      "new-registry.io/test/path/new-value:new-override-tag",
-				"SOME_IMAGE": "docker.io/my/overridden-image",
+				"SOME_IMAGE": "quay.io/my/overridden-image",
 			},
 		},
 		expected: []corev1.Container{{
 			Name:  "queue",
 			Image: "new-registry.io/test/path/new-value:new-override-tag",
-			Env:   []corev1.EnvVar{{Name: "SOME_IMAGE", Value: "docker.io/my/overridden-image"}},
+			Env:   []corev1.EnvVar{{Name: "SOME_IMAGE", Value: "quay.io/my/overridden-image"}},
 		}},
 	}, {
 		name: "OverrideWithDeploymentContainer",
