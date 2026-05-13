@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -62,6 +63,10 @@ func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 
 func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
+
+	if os.Getenv("USE_OLM_TLS") != "" { // olm manages cert rotation
+		return nil
+	}
 
 	secret, err := r.secretlister.Secrets(r.key.Namespace).Get(r.key.Name)
 	if apierrors.IsNotFound(err) {
