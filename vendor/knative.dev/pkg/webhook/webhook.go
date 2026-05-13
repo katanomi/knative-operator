@@ -25,6 +25,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	// Injection stuff
@@ -174,27 +175,45 @@ func New(
 		// a new secret informer from it.
 		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
 
-		webhook.tlsConfig = &tls.Config{
-			MinVersion: opts.TLSMinVersion,
+		var getCertificate = func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+			secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
+			if err != nil {
+				logger.Errorw("failed to fetch secret", zap.Error(err))
+				return nil, nil
+			}
+			webOpts := GetOptions(ctx)
+			sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
+			serverKey, ok := secret.Data[sKey]
+			if !ok {
+				logger.Warn("server key missing")
+				return nil, nil
+			}
+			serverCert, ok := secret.Data[sCert]
+			if !ok {
+				logger.Warn("server cert missing")
+				return nil, nil
+			}
+			cert, err := tls.X509KeyPair(serverCert, serverKey)
+			if err != nil {
+				return nil, err
+			}
+			return &cert, nil
+		}
 
-			// If we return (nil, error) the client sees - 'tls: internal error"
-			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
-			//
-			// We'll return (nil, nil) when we don't find a certificate
-			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+		if os.Getenv("USE_OLM_TLS") != "" {
+			getCertificate = func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 				secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
 				if err != nil {
 					logger.Errorw("failed to fetch secret", zap.Error(err))
 					return nil, nil
 				}
-				webOpts := GetOptions(ctx)
-				sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
-				serverKey, ok := secret.Data[sKey]
+
+				serverKey, ok := secret.Data["tls.key"]
 				if !ok {
 					logger.Warn("server key missing")
 					return nil, nil
 				}
-				serverCert, ok := secret.Data[sCert]
+				serverCert, ok := secret.Data["tls.crt"]
 				if !ok {
 					logger.Warn("server cert missing")
 					return nil, nil
@@ -204,7 +223,17 @@ func New(
 					return nil, err
 				}
 				return &cert, nil
-			},
+			}
+		}
+
+		webhook.tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+
+			// If we return (nil, error) the client sees - 'tls: internal error"
+			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
+			//
+			// We'll return (nil, nil) when we don't find a certificate
+			GetCertificate: getCertificate,
 		}
 	}
 
